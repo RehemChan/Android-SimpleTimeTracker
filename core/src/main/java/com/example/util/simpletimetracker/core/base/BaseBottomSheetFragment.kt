@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
@@ -12,8 +13,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.viewbinding.ViewBinding
 import com.example.util.simpletimetracker.core.R
+import com.example.util.simpletimetracker.core.manager.KeyboardVisibilityManager
 import com.example.util.simpletimetracker.core.utils.applyNavBarInsets
-import com.example.util.simpletimetracker.core.utils.doOnApplyWindowInsetsListener
 import com.example.util.simpletimetracker.core.utils.getStatusBarInsetsTop
 import com.example.util.simpletimetracker.navigation.Router
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -115,9 +116,16 @@ abstract class BaseBottomSheetFragment<T : ViewBinding> : BottomSheetDialogFragm
 
                 findViewById<View>(com.google.android.material.R.id.container)?.apply {
                     fitsSystemWindows = false
-                    doOnApplyWindowInsetsListener {
-                        updatePadding(top = it.getStatusBarInsetsTop(), bottom = 0)
+                    ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+                        KeyboardVisibilityManager.onInsetsChanged(insets)
+                        val top = insets.getStatusBarInsetsTop()
+                        view.updatePadding(top = top, bottom = 0)
+                        // The container already reserves this space. Passing it down again makes
+                        // BottomSheetBehavior treat a nearly full-height sheet as full-height,
+                        // leaving an outside touch area below its actual bottom.
+                        insets.inset(0, top, 0, 0)
                     }
+                    ViewCompat.requestApplyInsets(this)
                 }
 
                 findViewById<View>(com.google.android.material.R.id.coordinator)?.apply {
